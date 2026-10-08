@@ -3473,6 +3473,7 @@ if (this.p.isFlying || this.p.isUfo) {
     }
   }
   breakabletheblock(gameObj) {
+	alert("cooked");
     if (!gameObj) return false;
     if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
 
@@ -3504,7 +3505,7 @@ if (this.p.isFlying || this.p.isUfo) {
         }
         return success;
     }
-
+	alert("returning true")
     return false;
 }
 
