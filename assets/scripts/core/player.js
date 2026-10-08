@@ -3475,33 +3475,38 @@ if (this.p.isFlying || this.p.isUfo) {
   breakabletheblock(gameObj) {
     if (!gameObj) return false;
     if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
+
     const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
     if (linkedObjectId === null) return false;
 
-    // 1. Get the center position of the player and the block to determine collision direction
+    // Fast-track exit if this specific block is already in the middle of breaking
+    if (gameObj._isBreaking) return false;
+
     const playerY = this.y;
     const blockY = gameObj._eeWorldY ?? gameObj.y;
-
-    // 2. Check the engine's gravity orientation flags (handles normal vs upside-down)
     const isUpsideDown = this.isUpsideDown || this._upsidedown || (this.gravity < 0);
 
-    // 3. Define directional checks based on the player's Y velocity
-    // Normal gravity: Player must be falling DOWN (positive Y velocity) onto the block
     const breakingFromBottom = !isUpsideDown && this.velocity.y > 0 && playerY < blockY;
-    
-    // Flipped gravity: Player must be falling UP (negative Y velocity) into the block
     const breakingFromTop = isUpsideDown && this.velocity.y < 0 && playerY > blockY;
+    
+    // FIX: Only trigger from side if the player has actual horizontal intent/velocity
+    const breakingFromSide = Math.abs(this.velocity.y) < 0.1 && Math.abs(this.velocity.x) > 0.1;
 
-    // 4. Also allow side-swiping collisions if velocity Y is near 0 (running straight into it)
-    const breakingFromSide = Math.abs(this.velocity.y) < 0.1;
-
-    // Only trigger the break if one of our valid direction conditions is met
     if (breakingFromBottom || breakingFromTop || breakingFromSide) {
-      return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
+        // Flag the object immediately to prevent frame-perfect duplicate executions
+        gameObj._isBreaking = true; 
+        
+        const success = this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
+        
+        // If the engine failed to break it, revert the flag so we can try again
+        if (!success) {
+            gameObj._isBreaking = false;
+        }
+        return success;
     }
 
     return false;
-  }
+}
 
   playerIsFalling() {
     if (this.p.gravityFlipped) {
