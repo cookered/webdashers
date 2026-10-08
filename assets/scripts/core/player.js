@@ -3472,42 +3472,26 @@ if (this.p.isFlying || this.p.isUfo) {
       this._rotation = this.slerp2D(this._rotation, _0x5e6a2b, _0x1857d4);
     }
   }
-  breakabletheblock(gameObj) {
-	alert("cooked");
+ breakabletheblock(gameObj) {
     if (!gameObj) return false;
     if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
-
+    
     const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
     if (linkedObjectId === null) return false;
 
-    // Fast-track exit if this specific block is already in the middle of breaking
-    if (gameObj._isBreaking) return false;
+    // Check if the player is upside-down or if gravity is flipped
+    const isUpsideDown = this.isUpsideDown || this._upsidedown || (this.gravity < 0) || this.playerState?.gravityFlipped;
 
-    const playerY = this.y;
-    const blockY = gameObj._eeWorldY ?? gameObj.y;
-    const isUpsideDown = this.isUpsideDown || this._upsidedown || (this.gravity < 0);
+    // Normal Gravity: Player must be falling DOWN (positive velocity) to break
+    if (!isUpsideDown && this.velocity.y <= 0) return false;
 
-    const breakingFromBottom = !isUpsideDown && this.velocity.y > 0 && playerY < blockY;
-    const breakingFromTop = isUpsideDown && this.velocity.y < 0 && playerY > blockY;
-    
-    // FIX: Only trigger from side if the player has actual horizontal intent/velocity
-    const breakingFromSide = Math.abs(this.velocity.y) < 0.1 && Math.abs(this.velocity.x) > 0.1;
+    // Flipped Gravity: Player must be falling UP (negative velocity) to break
+    if (isUpsideDown && this.velocity.y >= 0) return false;
 
-    if (breakingFromBottom || breakingFromTop || breakingFromSide) {
-        // Flag the object immediately to prevent frame-perfect duplicate executions
-        gameObj._isBreaking = true; 
-        
-        const success = this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
-        
-        // If the engine failed to break it, revert the flag so we can try again
-        if (!success) {
-            gameObj._isBreaking = false;
-        }
-        return success;
-    }
-	alert("returning true")
-    return false;
+    // If velocity checks match the current gravity orientation, break the block
+    return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
 }
+
 
   playerIsFalling() {
     if (this.p.gravityFlipped) {
