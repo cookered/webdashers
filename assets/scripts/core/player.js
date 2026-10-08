@@ -3477,7 +3477,30 @@ if (this.p.isFlying || this.p.isUfo) {
     if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
     const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
     if (linkedObjectId === null) return false;
-    return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
+
+    // 1. Get the center position of the player and the block to determine collision direction
+    const playerY = this.y;
+    const blockY = gameObj._eeWorldY ?? gameObj.y;
+
+    // 2. Check the engine's gravity orientation flags (handles normal vs upside-down)
+    const isUpsideDown = this.isUpsideDown || this._upsidedown || (this.gravity < 0);
+
+    // 3. Define directional checks based on the player's Y velocity
+    // Normal gravity: Player must be falling DOWN (positive Y velocity) onto the block
+    const breakingFromBottom = !isUpsideDown && this.velocity.y > 0 && playerY < blockY;
+    
+    // Flipped gravity: Player must be falling UP (negative Y velocity) into the block
+    const breakingFromTop = isUpsideDown && this.velocity.y < 0 && playerY > blockY;
+
+    // 4. Also allow side-swiping collisions if velocity Y is near 0 (running straight into it)
+    const breakingFromSide = Math.abs(this.velocity.y) < 0.1;
+
+    // Only trigger the break if one of our valid direction conditions is met
+    if (breakingFromBottom || breakingFromTop || breakingFromSide) {
+      return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
+    }
+
+    return false;
   }
 
   playerIsFalling() {
