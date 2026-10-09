@@ -3485,36 +3485,41 @@ breakabletheblock(gameObj) {
         const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
         if (linkedObjectId === null) return false;
 
-        // Ultra-safe properties check to prevent common errors
+        // Safely pull values, guarding against undefined properties
         const velocityY = (this.velocity && typeof this.velocity.y === 'number') ? this.velocity.y : 0;
-        const isUpsideDown = this.isUpsideDown || this._upsidedown || (this.gravity < 0) || (this.playerState && this.playerState.gravityFlipped);
+        const isUpsideDown = !!(this.isUpsideDown || this._upsidedown || (typeof this.gravity === 'number' && this.gravity < 0) || (this.playerState && this.playerState.gravityFlipped));
 
         if (!isUpsideDown && velocityY <= 0) return false;
         if (isUpsideDown && velocityY >= 0) return false;
 
-        const playerY = this.y;
-        const blockY = gameObj._eeWorldY ?? gameObj.y;
+        const playerY = typeof this.y === 'number' ? this.y : 0;
+        const blockY = typeof gameObj._eeWorldY === 'number' ? gameObj._eeWorldY : (typeof gameObj.y === 'number' ? gameObj.y : 0);
 
         if (!isUpsideDown && playerY >= blockY) return false; 
         if (isUpsideDown && playerY <= blockY) return false;  
 
         return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
     } catch (error) {
-        // Trigger a browser alert exactly once so it doesn't freeze your device
-        if (!window._hasAlertedError) {
-            window._hasAlertedError = true;
-            alert("CRASH DETECTED!\n\nMessage: " + error.message + "\n\nStack:\n" + error.stack);
+        // Fallback: If it crashes, log it and make a box directly on screen
+        console.error("Collision error:", error);
+        
+        if (!document.getElementById('ee-debug-overlay')) {
+            const box = document.createElement('div');
+            box.id = 'ee-debug-overlay';
+            box.style.position = 'fixed';
+            box.style.top = '20px';
+            box.style.left = '20px';
+            box.style.background = 'red';
+            box.style.color = 'white';
+            box.style.padding = '15px';
+            box.style.zIndex = '99999';
+            box.style.fontFamily = 'sans-serif';
+            box.innerText = "Error: " + error.message;
+            document.body.appendChild(box);
         }
         return false;
     }
 }
-  playerIsFalling() {
-    if (this.p.gravityFlipped) {
-      return this.p.yVelocity > p;
-    } else {
-      return this.p.yVelocity < p;
-    }
-  }
     _applySlopeJumpBoost() {
     if (window.slopeJumpBoost === false) return;
     if (this._slopeExitVel === null || this._slopeExitVel === undefined) return;
