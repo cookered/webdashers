@@ -3472,27 +3472,42 @@ if (this.p.isFlying || this.p.isUfo) {
       this._rotation = this.slerp2D(this._rotation, _0x5e6a2b, _0x1857d4);
     }
   }
- breakabletheblock(gameObj) {
-    if (!gameObj) return false;
-    if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
-    
-    const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
-    if (linkedObjectId === null) return false;
-
-    // Check if the player is upside-down or if gravity is flipped
-    const isUpsideDown = this.isUpsideDown || this._upsidedown || (this.gravity < 0) || this.playerState?.gravityFlipped;
-
-    // Normal Gravity: Player must be falling DOWN (positive velocity) to break
-    if (!isUpsideDown && this.velocity.y <= 0) return false;
-
-    // Flipped Gravity: Player must be falling UP (negative velocity) to break
-    if (isUpsideDown && this.velocity.y >= 0) return false;
-
-    // If velocity checks match the current gravity orientation, break the block
-    return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
+// Add this temporary variable outside your function (e.g., at the very top of your script/class)
+// to make sure the alert only triggers once.
+if (typeof window._hasAlertedError === 'undefined') {
+    window._hasAlertedError = false;
 }
+breakabletheblock(gameObj) {
+    try {
+        if (!gameObj) return false;
+        if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
+        
+        const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
+        if (linkedObjectId === null) return false;
 
+        // Ultra-safe properties check to prevent common errors
+        const velocityY = (this.velocity && typeof this.velocity.y === 'number') ? this.velocity.y : 0;
+        const isUpsideDown = this.isUpsideDown || this._upsidedown || (this.gravity < 0) || (this.playerState && this.playerState.gravityFlipped);
 
+        if (!isUpsideDown && velocityY <= 0) return false;
+        if (isUpsideDown && velocityY >= 0) return false;
+
+        const playerY = this.y;
+        const blockY = gameObj._eeWorldY ?? gameObj.y;
+
+        if (!isUpsideDown && playerY >= blockY) return false; 
+        if (isUpsideDown && playerY <= blockY) return false;  
+
+        return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
+    } catch (error) {
+        // Trigger a browser alert exactly once so it doesn't freeze your device
+        if (!window._hasAlertedError) {
+            window._hasAlertedError = true;
+            alert("CRASH DETECTED!\n\nMessage: " + error.message + "\n\nStack:\n" + error.stack);
+        }
+        return false;
+    }
+}
   playerIsFalling() {
     if (this.p.gravityFlipped) {
       return this.p.yVelocity > p;
