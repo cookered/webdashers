@@ -3472,54 +3472,21 @@ if (this.p.isFlying || this.p.isUfo) {
       this._rotation = this.slerp2D(this._rotation, _0x5e6a2b, _0x1857d4);
     }
   }
-// Add this temporary variable outside your function (e.g., at the very top of your script/class)
-// to make sure the alert only triggers once.
-if (typeof window._hasAlertedError === 'undefined') {
-    window._hasAlertedError = false;
-}
-breakabletheblock(gameObj) {
-    try {
-        if (!gameObj) return false;
-        if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
-        
-        const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
-        if (linkedObjectId === null) return false;
+  breakabletheblock(gameObj) {
+    if (!gameObj) return false;
+    if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
+    const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
+    if (linkedObjectId === null) return false;
+    return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
+  }
 
-        // Safely pull values, guarding against undefined properties
-        const velocityY = (this.velocity && typeof this.velocity.y === 'number') ? this.velocity.y : 0;
-        const isUpsideDown = !!(this.isUpsideDown || this._upsidedown || (typeof this.gravity === 'number' && this.gravity < 0) || (this.playerState && this.playerState.gravityFlipped));
-
-        if (!isUpsideDown && velocityY <= 0) return false;
-        if (isUpsideDown && velocityY >= 0) return false;
-
-        const playerY = typeof this.y === 'number' ? this.y : 0;
-        const blockY = typeof gameObj._eeWorldY === 'number' ? gameObj._eeWorldY : (typeof gameObj.y === 'number' ? gameObj.y : 0);
-
-        if (!isUpsideDown && playerY >= blockY) return false; 
-        if (isUpsideDown && playerY <= blockY) return false;  
-
-        return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
-    } catch (error) {
-        // Fallback: If it crashes, log it and make a box directly on screen
-        console.error("Collision error:", error);
-        
-        if (!document.getElementById('ee-debug-overlay')) {
-            const box = document.createElement('div');
-            box.id = 'ee-debug-overlay';
-            box.style.position = 'fixed';
-            box.style.top = '20px';
-            box.style.left = '20px';
-            box.style.background = 'red';
-            box.style.color = 'white';
-            box.style.padding = '15px';
-            box.style.zIndex = '99999';
-            box.style.fontFamily = 'sans-serif';
-            box.innerText = "Error: " + error.message;
-            document.body.appendChild(box);
-        }
-        return false;
+  playerIsFalling() {
+    if (this.p.gravityFlipped) {
+      return this.p.yVelocity > p;
+    } else {
+      return this.p.yVelocity < p;
     }
-}
+  }
     _applySlopeJumpBoost() {
     if (window.slopeJumpBoost === false) return;
     if (this._slopeExitVel === null || this._slopeExitVel === undefined) return;
