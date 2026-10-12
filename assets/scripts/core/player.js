@@ -3472,13 +3472,40 @@ if (this.p.isFlying || this.p.isUfo) {
       this._rotation = this.slerp2D(this._rotation, _0x5e6a2b, _0x1857d4);
     }
   }
-  breakabletheblock(gameObj) {
-    if (!gameObj) return false;
-    if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
-    const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
-    if (linkedObjectId === null) return false;
+ breakabletheblock(gameObj) {
+  if (!gameObj) return false;
+  if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
+  
+  const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
+  if (linkedObjectId === null) return false;
+
+  const playerY = this.y;
+  const blockY = gameObj._eeWorldY ?? gameObj.y;
+  const playerX = this.x;
+  const blockX = gameObj._eeWorldX ?? gameObj.x;
+  
+  const isUpsideDown = this.isUpsideDown || this._upsidedown || (this.gravity < 0);
+
+  // 1. Vertical Breaks (Top / Bottom)
+  const breakingFromBottom = !isUpsideDown && this.velocity.y > 0 && playerY < blockY;
+  const breakingFromTop = isUpsideDown && this.velocity.y < 0 && playerY > blockY;
+
+  // 2. Safe Side Breaks: Requires active horizontal speed pushing INTO the block's sides
+  // Assuming a standard block width context (e.g., 32 or 64 pixels). Adjust alignment values if needed.
+  const hittingLeftObjSide = this.velocity.x > 0 && playerX < blockX;
+  const hittingRightObjSide = this.velocity.x < 0 && playerX > blockX;
+  
+  // Only consider it a side break if the player is vertically aligned with the block 
+  // (This stops it from triggering when you are just running normally on top of it)
+  const isVerticallyAligned = Math.abs(playerY - blockY) < 10; 
+  const breakingFromSide = isVerticallyAligned && (hittingLeftObjSide || hittingRightObjSide);
+
+  if (breakingFromBottom || breakingFromTop || breakingFromSide) {
     return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
   }
+
+  return false;
+}
 
   playerIsFalling() {
     if (this.p.gravityFlipped) {
