@@ -3472,57 +3472,13 @@ if (this.p.isFlying || this.p.isUfo) {
       this._rotation = this.slerp2D(this._rotation, _0x5e6a2b, _0x1857d4);
     }
   }
-breakabletheblock(gameObj) {
-  if (!gameObj) return false;
-  if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
-  const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
-  if (linkedObjectId === null) return false;
-
-  const playerData = this.p || {};
-  
-  const playerY = playerData.y ?? this._lastCollisionWorldY ?? 0;
-  const playerX = playerData.x ?? this._lastCollisionWorldX ?? 0;
-  
-  const blockY = gameObj._eeWorldY ?? gameObj.y ?? 0;
-  const blockX = gameObj._eeWorldX ?? gameObj.x ?? 0;
-
-  const isUpsideDown = playerData.isUpsideDown || playerData._upsidedown || (playerData.gravity < 0);
-
-  // Core dimensions: half-width/height of a block (adjust if blocks are larger than 32x32)
-  const halfBlockSize = 16; 
-
-  // Check if the player is vertically level with the block's side profile
-  const isVerticallyLevel = playerY >= (blockY - halfBlockSize) && playerY <= (blockY + halfBlockSize);
-  
-  // Check if the player is hitting from the left or right side face
-  const isHittingSideFace = Math.abs(playerX - blockX) > halfBlockSize;
-  const isSideCollision = isVerticallyLevel && isHittingSideFace;
-
-  // ==========================================
-  // 1. UPSIDE DOWN GRAVITY (Top & Sides)
-  // ==========================================
-  if (isUpsideDown) {
-    const isTopCollision = playerY > (blockY - halfBlockSize);
-
-    if (isTopCollision || isSideCollision) {
-		alert("W");
-      return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
-    }
-    return false; // Blocks bottom-face hits completely
-  } 
-  
-  // ==========================================
-  // 2. NORMAL GRAVITY (Bottom & Sides)
-  // ==========================================
-  else {
-    const isBottomCollision = playerY < (blockY + halfBlockSize);
-
-    if (isBottomCollision || isSideCollision) {
-      return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
-    }
-    return false; // Blocks top-face hits completely
+  breakabletheblock(gameObj) {
+    if (!gameObj) return false;
+    if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
+    const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
+    if (linkedObjectId === null) return false;
+    return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
   }
-}
 
   playerIsFalling() {
     if (this.p.gravityFlipped) {
@@ -4835,22 +4791,28 @@ breakabletheblock(gameObj) {
             } catch(e) {}
           }
         } else if (_colType === hazardType) {
-          if (window.noClip) {
-            this.p.diedThisFrame = true; 
-            continue;
-          }
-          if (_hasCircleHitbox) {
-            const _hdx = pieceWidth - gameObj.x;
-            const _hdy = playersY - gameObj.y;
-            const _hDistSq = _hdx * _hdx + _hdy * _hdy;
-            const _hMinDist = gameObj.hitbox_radius + (this.p.isWave ? waveHitSize : playerSize);
-            if (_hDistSq > _hMinDist * _hMinDist) continue;
-          }
-          if (this.breakabletheblock(gameObj)) {
-            continue;
-          }
-          this.killPlayer();
-          return;
+  if (window.noClip) {
+    this.p.diedThisFrame = true; 
+    continue;
+  }
+  
+  // FIXED: Check if it's a breakable block BEFORE calculating circular distances
+  if (this.breakabletheblock(gameObj)) {
+    continue; 
+  }
+
+  if (_hasCircleHitbox) {
+    const _hdx = pieceWidth - gameObj.x;
+    const _hdy = playersY - gameObj.y;
+    const _hDistSq = _hdx * _hdx + _hdy * _hdy;
+    const _hMinDist = gameObj.hitbox_radius + (this.p.isWave ? waveHitSize : playerSize);
+    if (_hDistSq > _hMinDist * _hMinDist) continue;
+  }
+
+  this.killPlayer();
+  return;
+}
+
         } else if (_colType === slopeType) {
           const slopeResult = this._handleSlopeCollision(
             gameObj, pieceWidth, playersY, playersLastY, left, right, top, bottom, playerSize, waveHitSize, gamemodeAddition
