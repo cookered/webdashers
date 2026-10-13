@@ -3505,6 +3505,7 @@ breakabletheblock(gameObj) {
     const isTopCollision = playerY > (blockY - halfBlockSize);
 
     if (isTopCollision || isSideCollision) {
+		alert("W");
       return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
     }
     return false; // Blocks bottom-face hits completely
