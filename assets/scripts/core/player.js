@@ -4791,48 +4791,48 @@ if (this.p.isFlying || this.p.isUfo) {
             } catch(e) {}
           }
         } else if (_colType === hazardType) {
-  if (window.noClip) {
-    this.p.diedThisFrame = true; 
+    if (window.noClip) {
+      this.p.diedThisFrame = true; 
+      continue;
+    }
+    
+    // FIXED: Check if it's a breakable block BEFORE calculating circular distances
+    if (this.breakabletheblock(gameObj)) {
+      continue; 
+    }
+
+    if (_hasCircleHitbox) {
+      const _hdx = pieceWidth - gameObj.x;
+      const _hdy = playersY - gameObj.y;
+      const _hDistSq = _hdx * _hdx + _hdy * _hdy;
+      const _hMinDist = gameObj.hitbox_radius + (this.p.isWave ? waveHitSize : playerSize);
+      if (_hDistSq > _hMinDist * _hMinDist) continue;
+    }
+
+    this.killPlayer();
+    return;
+    // ⚠️ STRAY BRACE REMOVED FROM HERE
+
+  } else if (_colType === slopeType) { // Cleaned up alignment
+    const slopeResult = this._handleSlopeCollision(
+      gameObj, pieceWidth, playersY, playersLastY, left, right, top, bottom, playerSize, waveHitSize, gamemodeAddition
+    );
+    if (slopeResult.died) {
+      this.killPlayer();
+      return;
+    }
+    if (slopeResult.landed && slopeResult.candidate) {
+      const cand = slopeResult.candidate;
+      const isBetter = !bestSlopeCandidate || (preferHighestSlopeSurface
+        ? cand.y > bestSlopeCandidate.y
+        : cand.y < bestSlopeCandidate.y);
+      if (isBetter) {
+        bestSlopeCandidate = cand;
+        bestSlopeGameObj = gameObj;
+      }
+    }
     continue;
-  }
-  
-  // FIXED: Check if it's a breakable block BEFORE calculating circular distances
-  if (this.breakabletheblock(gameObj)) {
-    continue; 
-  }
-
-  if (_hasCircleHitbox) {
-    const _hdx = pieceWidth - gameObj.x;
-    const _hdy = playersY - gameObj.y;
-    const _hDistSq = _hdx * _hdx + _hdy * _hdy;
-    const _hMinDist = gameObj.hitbox_radius + (this.p.isWave ? waveHitSize : playerSize);
-    if (_hDistSq > _hMinDist * _hMinDist) continue;
-  }
-
-  this.killPlayer();
-  return;
-}
-
-        } else if (_colType === slopeType) {
-          const slopeResult = this._handleSlopeCollision(
-            gameObj, pieceWidth, playersY, playersLastY, left, right, top, bottom, playerSize, waveHitSize, gamemodeAddition
-          );
-          if (slopeResult.died) {
-            this.killPlayer();
-            return;
-          }
-          if (slopeResult.landed && slopeResult.candidate) {
-            const cand = slopeResult.candidate;
-            const isBetter = !bestSlopeCandidate || (preferHighestSlopeSurface
-              ? cand.y > bestSlopeCandidate.y
-              : cand.y < bestSlopeCandidate.y);
-            if (isBetter) {
-              bestSlopeCandidate = cand;
-              bestSlopeGameObj = gameObj;
-            }
-          }
-          continue;
-        } else if (_colType === solidType) {
+  } else if (_colType === solidType) {
           let _0x146a97 = playersY - playerSize + gamemodeAddition;
           let _0x869e42 = playersLastY - playerSize + gamemodeAddition;
           let _0x3e7199 = playersY + playerSize - gamemodeAddition;
