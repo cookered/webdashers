@@ -3478,40 +3478,28 @@ breakabletheblock(gameObj) {
   const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
   if (linkedObjectId === null) return false;
 
-  // 1. Check if 'this' context even exists
-  if (!this) {
-    alert("Error: 'this' context is undefined inside breakabletheblock!");
-    return false;
-  }
-
-  // 2. Alert if positioning parameters are missing
-  if (this.y === undefined) {
-    alert("Error: 'this.y' is undefined! 'this' contains keys: " + Object.keys(this).join(", "));
-    return false;
-  }
+  // 1. Pull physics values out of the inner 'p' object where they live
+  const playerData = this.p || {};
   
-  const blockY = gameObj._eeWorldY ?? gameObj.y;
-  if (blockY === undefined) {
-    alert("Error: Both gameObj._eeWorldY and gameObj.y are undefined!");
-    return false;
-  }
+  // Use _lastCollisionWorldY or p.y for player position
+  const playerY = playerData.y ?? this._lastCollisionWorldY ?? 0;
+  const blockY = gameObj._eeWorldY ?? gameObj.y ?? 0;
 
-  const playerY = this.y;
+  // 2. Map engine specific flags from 'p'
+  // In standard GD engines: gravity is usually flipped if p.gravity < 0 or p.isUpsideDown is true
+  const isUpsideDown = playerData.isUpsideDown || playerData._upsidedown || (playerData.gravity < 0);
 
-  // 3. Track gravity states and see what your engine uses
-  const isUpsideDown = this.isUpsideDown || this._upsidedown || (this.gravity < 0);
-  
-  // 4. Track UFO state and see what your engine uses
-  const isUFO = this.isUFO || this._isUFO || this._ufo;
+  // 3. Map UFO mode flag from 'p' (usually isBird or isUFO depending on the custom engine codebase)
+  const isUFO = playerData.isUFO || playerData._isUFO || playerData.isBird || playerData._isBird;
 
-  // 5. If upside down AND a UFO, they break from the top (player Y > block Y)
+  // 4. Upside down UFO: break from the top (Player Y coordinate is greater than Block Y)
   if (isUpsideDown && isUFO) {
     if (playerY > blockY) {
       return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
     }
   }
 
-  // 6. Default breaking behavior (normal gravity, from below)
+  // 5. Normal gravity: break from the bottom (Player Y coordinate is less than Block Y)
   if (!isUpsideDown && playerY < blockY) {
     return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
   }
