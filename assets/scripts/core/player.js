@@ -3478,33 +3478,49 @@ breakabletheblock(gameObj) {
   const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
   if (linkedObjectId === null) return false;
 
-  // 1. Pull physics values out of the inner 'p' object where they live
   const playerData = this.p || {};
   
-  // Use _lastCollisionWorldY or p.y for player position
   const playerY = playerData.y ?? this._lastCollisionWorldY ?? 0;
+  const playerX = playerData.x ?? this._lastCollisionWorldX ?? 0;
+  
   const blockY = gameObj._eeWorldY ?? gameObj.y ?? 0;
+  const blockX = gameObj._eeWorldX ?? gameObj.x ?? 0;
 
-  // 2. Map engine specific flags from 'p'
-  // In standard GD engines: gravity is usually flipped if p.gravity < 0 or p.isUpsideDown is true
   const isUpsideDown = playerData.isUpsideDown || playerData._upsidedown || (playerData.gravity < 0);
 
-  // 3. Map UFO mode flag from 'p' (usually isBird or isUFO depending on the custom engine codebase)
-  const isUFO = playerData.isUFO || playerData._isUFO || playerData.isBird || playerData._isBird;
+  // Core dimensions: half-width/height of a block (adjust if blocks are larger than 32x32)
+  const halfBlockSize = 16; 
 
-  // 4. Upside down UFO: break from the top (Player Y coordinate is greater than Block Y)
-  if (isUpsideDown && isUFO) {
-    if (playerY > blockY) {
+  // Check if the player is vertically level with the block's side profile
+  const isVerticallyLevel = playerY >= (blockY - halfBlockSize) && playerY <= (blockY + halfBlockSize);
+  
+  // Check if the player is hitting from the left or right side face
+  const isHittingSideFace = Math.abs(playerX - blockX) > halfBlockSize;
+  const isSideCollision = isVerticallyLevel && isHittingSideFace;
+
+  // ==========================================
+  // 1. UPSIDE DOWN GRAVITY (Top & Sides)
+  // ==========================================
+  if (isUpsideDown) {
+    const isTopCollision = playerY > (blockY - halfBlockSize);
+
+    if (isTopCollision || isSideCollision) {
       return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
     }
-  }
+    return false; // Blocks bottom-face hits completely
+  } 
+  
+  // ==========================================
+  // 2. NORMAL GRAVITY (Bottom & Sides)
+  // ==========================================
+  else {
+    const isBottomCollision = playerY < (blockY + halfBlockSize);
 
-  // 5. Normal gravity: break from the bottom (Player Y coordinate is less than Block Y)
-  if (!isUpsideDown && playerY < blockY) {
-    return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
+    if (isBottomCollision || isSideCollision) {
+      return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
+    }
+    return false; // Blocks top-face hits completely
   }
-
-  return false;
 }
 
   playerIsFalling() {
