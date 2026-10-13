@@ -3472,35 +3472,47 @@ if (this.p.isFlying || this.p.isUfo) {
       this._rotation = this.slerp2D(this._rotation, _0x5e6a2b, _0x1857d4);
     }
   }
- breakabletheblock(gameObj) {
+breakabletheblock(gameObj) {
   if (!gameObj) return false;
   if (parseInt(gameObj.objid ?? 0, 10) !== 143) return false;
-  
   const linkedObjectId = Number.isInteger(gameObj._eeObjectId) ? gameObj._eeObjectId : null;
   if (linkedObjectId === null) return false;
 
-  const playerY = this.y;
+  // 1. Check if 'this' context even exists
+  if (!this) {
+    alert("Error: 'this' context is undefined inside breakabletheblock!");
+    return false;
+  }
+
+  // 2. Alert if positioning parameters are missing
+  if (this.y === undefined) {
+    alert("Error: 'this.y' is undefined! 'this' contains keys: " + Object.keys(this).join(", "));
+    return false;
+  }
+  
   const blockY = gameObj._eeWorldY ?? gameObj.y;
-  const playerX = this.x;
-  const blockX = gameObj._eeWorldX ?? gameObj.x;
-  
+  if (blockY === undefined) {
+    alert("Error: Both gameObj._eeWorldY and gameObj.y are undefined!");
+    return false;
+  }
+
+  const playerY = this.y;
+
+  // 3. Track gravity states and see what your engine uses
   const isUpsideDown = this.isUpsideDown || this._upsidedown || (this.gravity < 0);
-
-  // 1. Vertical Breaks (Top / Bottom)
-  const breakingFromBottom = !isUpsideDown && this.velocity.y > 0 && playerY < blockY;
-  const breakingFromTop = isUpsideDown && this.velocity.y < 0 && playerY > blockY;
-
-  // 2. Safe Side Breaks: Requires active horizontal speed pushing INTO the block's sides
-  // Assuming a standard block width context (e.g., 32 or 64 pixels). Adjust alignment values if needed.
-  const hittingLeftObjSide = this.velocity.x > 0 && playerX < blockX;
-  const hittingRightObjSide = this.velocity.x < 0 && playerX > blockX;
   
-  // Only consider it a side break if the player is vertically aligned with the block 
-  // (This stops it from triggering when you are just running normally on top of it)
-  const isVerticallyAligned = Math.abs(playerY - blockY) < 10; 
-  const breakingFromSide = isVerticallyAligned && (hittingLeftObjSide || hittingRightObjSide);
+  // 4. Track UFO state and see what your engine uses
+  const isUFO = this.isUFO || this._isUFO || this._ufo;
 
-  if (breakingFromBottom || breakingFromTop || breakingFromSide) {
+  // 5. If upside down AND a UFO, they break from the top (player Y > block Y)
+  if (isUpsideDown && isUFO) {
+    if (playerY > blockY) {
+      return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
+    }
+  }
+
+  // 6. Default breaking behavior (normal gravity, from below)
+  if (!isUpsideDown && playerY < blockY) {
     return this._gameLayer?._breakblock?.(linkedObjectId) ?? false;
   }
 
