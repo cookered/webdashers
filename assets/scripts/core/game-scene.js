@@ -1,3 +1,6 @@
+var pmdt = 3;
+var pmit;
+var pmode = false;
 class PracticeMode {
   constructor() {
     this.checkpoints = [];
@@ -9,9 +12,11 @@ class PracticeMode {
     if (!this.practiceMode) {
       this.clearCheckpoints();
     }
+    pmode = this.practiceMode;
     return this.practiceMode;
   }
   saveCheckpoint(playerState, playerWorldX, cameraX, scene) {
+    console.log(playerState, playerWorldX, cameraX, scene)
     if (!this.practiceMode || playerState.isDead) return false;
     const checkpoint = {
       x: playerWorldX,
@@ -3829,7 +3834,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         if (this._isMainLevelForCoinDisplay()) {
           window._mainLevelReturnToSelect = true;
         }
-        this._resumeGame();
+        this._resumeGame(this);
         this.scene.restart();
       } else if (!this._menuActive && !this._slideIn && !this._levelWon) {
         this._pauseGame();
@@ -3841,6 +3846,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         this._restartLevel();
       }
     });
+`
     this._practiceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
     this._practiceKey.on("down", () => {
       if (!this._menuActive && !this._slideIn) {
@@ -3854,6 +3860,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         this._audio.startMusic(this._getCurrentMusicSyncOffset());
       }
     });
+`
     this._saveCheckpointKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
     this._saveCheckpointKey.on("down", () => {
       if (!this._menuActive && !this._slideIn && this._practicedMode.practiceMode) {
@@ -4779,6 +4786,9 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
   _pauseGame() {
     if (!this._paused && !this._menuActive && !this._slideIn && !this._levelWon) {
       this._paused = true;
+      if (pmit != null){
+        clearInterval(pmit);
+      }
       this._pauseBtn.setVisible(false);
       this._audio.pauseMusic();
       this._setParticleTimeScale(0);
@@ -4787,7 +4797,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       this._buildPauseOverlay();
     }
   }
-  _resumeGame() {
+  _resumeGame(practicem) {
     if (this._paused) {
       this._setParticleTimeScale(1);
       this._player?.setDeathAnimationPaused?.(false);
@@ -4803,6 +4813,16 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         this._pauseContainer = null;
       }
     }
+        setTimeout(function(){
+          if (pmdt > 0 && practicem._practicedMode.practiceMode){
+            pmit = setInterval(function(){
+              if (!this._paused && !practicem._menuActive && !practicem._slideIn && practicem._practicedMode.practiceMode) {
+                const saved = practicem._practicedMode.saveCheckpoint(practicem._state, practicem._playerWorldX, practicem._cameraX, practicem);
+                if (saved) {}
+              }
+            }, pmdt*1000);
+          }
+        }, 1000);
   }
   _queueGameplayLevelViewReturn() {
     const currentLevelId = window.currentlevel?.[2] ?? window._onlineLevelId ?? null;
@@ -4947,7 +4967,7 @@ _buildPauseOverlay() {
 
     const _0x4791ac = [
         { frame: this._practicedMode.practiceMode ? "GJ_normalBtn_001.png" : "GJ_practiceBtn_001.png", atlas: "GJ_GameSheet03", action: null },
-        { frame: "GJ_playBtn2_001.png", atlas: "GJ_WebSheet", action: () => this._resumeGame() },
+        { frame: "GJ_playBtn2_001.png", atlas: "GJ_WebSheet", action: () => this._resumeGame(this) },
         { frame: "GJ_menuBtn_001.png", atlas: "GJ_WebSheet", action: () => {
             this._audio.playEffect("quitSound_01");
             this._queueGameplayLevelViewReturn();
@@ -4957,11 +4977,11 @@ _buildPauseOverlay() {
             this.game.registry.remove("autoStartGame");
             window.isEditor = false;
             this._audio.stopMusic();
-            this._resumeGame();
+            this._resumeGame(this);
             this.scene.restart();
         }},
         { frame: "GJ_replayBtn_001.png", atlas: "GJ_WebSheet", action: () => {
-            this._resumeGame();
+            this._resumeGame(this);
             this._restartLevel();
         }}
     ];
@@ -4980,7 +5000,7 @@ _buildPauseOverlay() {
                 const isPracticeMode = this._practicedMode.togglePracticeMode();
                 btn.setTexture("GJ_GameSheet03", isPracticeMode ? "GJ_normalBtn_001.png" : "GJ_practiceBtn_001.png");
                 if (this._checkpointBtnContainer) this._checkpointBtnContainer.setVisible(isPracticeMode);
-                this._resumeGame();
+                this._resumeGame(this);
                 if (!isPracticeMode) {
                     this._practicedMode.clearCheckpoints();
                     this._restartLevel();
@@ -5109,6 +5129,7 @@ _buildSettingsPopup() {
         "Enable Portal Guide": "Enables extra indicators on portals.",
         "Enable Orb Guide": "Enables extra indicators on orbs.",
         "Practice Music Bypass": "Plays normal mode music in practice mode.",
+        "Auto Checkpoints Distance": "How much time (seconds) in between each auto checkpoint; put as 0 to disable",
         "Show Percentage": "Shows the percentage you are at in a level.",
         "Percentage Decimals": "Shows decimals in level progress.",
         "Startpos Switcher": "Switches between start positions in a level.",
@@ -5351,8 +5372,16 @@ _buildSettingsPopup() {
           10,
           false
         );
+        createNumberInput(container, column2X, startY + spacingY, "Practice Mode Auto Checkpoints", 
+          () => pmdt,
+          (thedist) => pmdt = thedist,
+          0,
+          100,
+          true,
+          "Auto Checkpoints Distance"
+        );
 
-        createToggle(container, column2X, startY + spacingY, "Practice Music Sync",
+        createToggle(container, column2X, startY + spacingY*2, "Practice Music Sync",
             () => window.practiceMusicSync,
             (v) => {
                 const changed = !!window.practiceMusicSync !== !!v;
@@ -8060,7 +8089,7 @@ _showwippopup() {
     if (this._paused) {
       if (!this._updateLogPopup && (this._spaceKey.isDown || this._upKey.isDown || this._wKey.isDown || this._lKey.isDown) && !this._spaceWasDown && !this._settingsPopup) {
         setTimeout(() => {
-          this._resumeGame();
+          this._resumeGame(this);
         }, 75);
       }
       this._deltaBuffer = 0;
