@@ -4832,7 +4832,30 @@ if (this.p.isFlying || this.p.isUfo) {
       }
     }
     continue;
-  } else if (_colType === solidType) {
+} else if (_colType === solidType) {
+  // --- CUSTOM DIRECTIONAL BREAKABLE BLOCK LOGIC ---
+  if (parseInt(gameObj.objid ?? 0, 10) === 143) {
+    let _0x146a97 = playersY - playerSize + gamemodeAddition;
+    let _0x869e42 = playersLastY - playerSize + gamemodeAddition;
+    let _0x3e7199 = playersY + playerSize - gamemodeAddition;
+    let _0x135a9d = playersLastY + playerSize - gamemodeAddition;
+
+    const _0xLandBot = (this.p.yVelocity <= 0 || this.p.onGround) && (_0x146a97 >= bottom || _0x869e42 >= bottom);
+    const _0xLandTop = (this.p.yVelocity >= 0 || this.p.onGround) && (_0x3e7199 <= top || _0x135a9d <= top);
+
+    // Prevent right-side up from breaking it if landing on the TOP surface
+    if (!this.p.gravityFlipped && _0xLandBot) {
+      // Act like normal solid ground, skip the break check
+    } 
+    // Prevent upside-down from breaking it if landing on the BOTTOM surface
+    else if (this.p.gravityFlipped && _0xLandTop) {
+      // Act like a normal solid ceiling, skip the break check
+    } 
+    // If it's hit from any other valid direction (side, or carving from the correct inverted side)
+    else if (this.breakabletheblock(gameObj)) {
+      continue; 
+    }
+  }
           let _0x146a97 = playersY - playerSize + gamemodeAddition;
           let _0x869e42 = playersLastY - playerSize + gamemodeAddition;
           let _0x3e7199 = playersY + playerSize - gamemodeAddition;
